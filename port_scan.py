@@ -7,7 +7,7 @@ if __name__ == '__main__':
     import sys
 
     if ( len(sys.argv) != 2 ):
-        print "Usage: " + sys.argv[0] + " you must enter IP or FQDN as argument"
+        print("Usage: " + sys.argv[0] + " you must enter IP or FQDN as argument")
         sys.exit(1)
 	
     targetIP = gethostbyname(sys.argv[1])
@@ -16,5 +16,5 @@ if __name__ == '__main__':
        	s = socket(AF_INET, SOCK_STREAM)
 	result = s.connect_ex((targetIP, i))
        	if(result == 0) :
-            print '%d' % (i)
+            print('%d' % (i))
 	    s.close()
