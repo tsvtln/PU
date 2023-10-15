@@ -1,0 +1,95 @@
+On Error Resume Next
+
+'Global variables
+host = ""
+shareName = "storage"
+username = "guest"
+password = ""
+driveLetter = "z:"
+
+Sub abort(message, exitCode)
+	Wscript.StdErr.Write(message & vbCrLf)
+	Wscript.Quit(exitCode)
+End Sub
+
+Sub checkIP(machine)
+	Set WshShell = WScript.CreateObject("WScript.Shell")
+	Set WshExec = WshShell.Exec("ping -n 3 -w 2000 " & machine) 'send 3 echo requests, waiting 2secs each
+	strPingResults = LCase(WshExec.StdOut.ReadAll)
+	If InStr(strPingResults, "reply from") Then
+		response="true"
+	Else
+		abort "Host " & machine & " is not reachable", 1
+	End If
+
+End Sub
+
+Sub SanityCheck(uncPath,driveLetter)
+	Dim oFSO
+	Set oFSO = CreateObject("Scripting.FileSystemObject")
+	'Check if the drive exists
+
+	If oFSO.DriveExists(driveLetter) Then
+		set drive = oFSO.GetDrive(driveLetter)
+
+		'Check if a different network share is mounted on the drive
+		network_share_name = drive.ShareName
+		str_len = Len(uncPath)
+		If Right(uncPath,1) = "\" Then
+			uncPath = Left(uncPath,str_len-1)
+		End If
+		If uncPath <> network_share_name Then
+			abort "A different network share is already mounted on the specified drive!", 1
+		Else
+			abort "The network share is already mounted.", 0
+		End If
+
+		'Not a network drive
+		If drive.DriveType <> 3 Then
+			abort "The specified drive already exists and it's not a network share!", 1
+		End If
+		'net.RemoveNetworkDrive driveLetter, True, True
+	End If
+
+End Sub
+
+Set args=Wscript.Arguments
+If args.Count > 0 Then
+    host = args.Item(0)
+Else
+	abort "Usage: mount_share.vbs host/IP [sharename] [driveLetter(z:)] [username(guest)] [password]" +  vbCrLf + "Example: cscript mount_share.vbs 192.168.0.3 share z: username password ", 1
+End If
+If args.Count > 1 Then
+    shareName = args.Item(1)
+End If
+If args.Count > 2 Then
+    driveLetter = args.Item(2)
+End If
+If args.Count > 3 Then
+    username = args.Item(3)
+End If
+If args.Count > 4 Then
+	password = args.Item(4)
+End If
+
+'check if the host provided is valid'
+checkIP host
+
+Set net = CreateObject("WScript.Network")
+uncPath = "\\" + host + "\" + shareName
+
+Wscript.Echo("Mounting share at " + uncPath + " to drive " + driveLetter + " as user " + username)
+SanityCheck uncPath, driveLetter
+
+
+If password = "" Then
+	net.MapNetworkDrive driveLetter, uncPath, "False", username
+Else
+	net.MapNetworkDrive driveLetter, uncPath, "False", username, password
+End If
+
+If Err.Number <> 0 Then
+	abort "Mount failed. " + Err.Description + ". Please confirm your connection info.", Err.Number
+Else
+	Wscript.Echo("Share mounted successfully")
+End If
