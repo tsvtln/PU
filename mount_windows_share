@@ -1,6 +1,6 @@
 On Error Resume Next
 
-'Global variables
+'Global variables'
 host = ""
 shareName = "storage"
 username = "guest"
