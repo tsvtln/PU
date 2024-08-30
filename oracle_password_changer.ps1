@@ -1,3 +1,7 @@
+# store credentials in credentialsPath with variables: DB_USER DB_PASSWORD
+# temp pass is password with permissions to connect to DB and change password
+# sqlplus required and ps1 execution enabled
+
 $credentialsPath = "C:\Users\User\Desktop\workdir\much_secure.conf"
 
 $creds = Get-Content $credentialsPath | ForEach-Object {
