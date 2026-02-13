@@ -9,7 +9,7 @@ Use caution what is your current dir as this can be destructive and
     doesnt have any checks implemented; it will override any
     existing files.
 
-tsvetelin.maslarski-ext@ldc.com
+@tsvtln
 END_COMMENT
 
 lc(){
@@ -47,7 +47,7 @@ curl -k -o ./.gitignore "https://raw.githubusercontent.com/tsvtln/PU/refs/heads/
 
 echo -e "---\n# defaults file for $lwc" > ./roles/$lwc/defaults/main.yml
 echo -e "---\n# handlers file for $lwc" > ./roles/$lwc/handlers/main.yml
-echo -e "galaxy_info:\n  author: Tsvetelin Maslarski\n  description: <fill>\n  company: Louis Dreyfus Company (LDC)\n  license: GPLv2\n  min_ansible_version: '2.4'\n  galaxy_tags: []\n  platforms:\n    - name: EL\n      versions:\n        - all\n    - name: Ubuntu\n      versions:\n        - all\n    - name: Windows\n      versions:\n        - all\ndependencies: []" > ./roles/$lwc/meta/main.yml
+echo -e "galaxy_info:\n  author: tsvtln\n  description: <fill>\n  company: tsvtln@github\n  license: GPLv2\n  min_ansible_version: '2.4'\n  galaxy_tags: []\n  platforms:\n    - name: EL\n      versions:\n        - all\n    - name: Ubuntu\n      versions:\n        - all\n    - name: Windows\n      versions:\n        - all\ndependencies: []" > ./roles/$lwc/meta/main.yml
 echo -e "---" > ./roles/$lwc/tasks/main.yml
 
 echo "ggwp"
