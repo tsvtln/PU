@@ -1,0 +1,10 @@
+# Placeholder for any custom roles or collections required by AWX CAAC
+# Ensure infra.controller_configuration.dispatch is available in your execution environment or requirements.yml
+
+collections:
+  - name: infra.controller_configuration
+    # version:
+    # source:
+  - name: ldc.custom.azure.manager
+    version: 1.2.2
+    source: file:/home/azureuser/CAAC/collection/ldc_custom-azure_manager-1.2.2.tar.gz

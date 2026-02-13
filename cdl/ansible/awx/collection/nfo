@@ -1,0 +1,22 @@
+Copy the tar.gz to the AWX execution environment
+
+Add to requirements:
+---
+collections:
+  - file:/path/to/ldc_custom-azure_manager-1.2.2.tar.gz
+
+Build new EE image
+ansible-builder build --container-runtime docker
+
+Push the image to registry and update the EE in AWX to use this image.
+
++++
+OR
+
+install directly:
+ansible-galaxy collection install /path/to/ldc_custom-azure_manager-1.2.2.tar.gz
+
+useful doc:
+https://devops.dina.ch/awx-19-create-a-custom-awx-ee-docker-image
+
+

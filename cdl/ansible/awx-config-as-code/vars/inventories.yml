@@ -1,0 +1,78 @@
+---
+# AWX Inventories Configuration
+
+# Define inventories to be created in AWX
+awx_inventories:
+  - name: "Ansible Lab"
+    description: "Ansible Lab Infrastructure"
+    organization: "Default"
+    variables:
+      ansible_user: ansible
+      ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+
+# Define inventory groups
+awx_inventory_groups:
+  - name: "controllers"
+    inventory: "Ansible Lab"
+    description: "Ansible controller nodes"
+    variables:
+      node_type: controller
+
+  - name: "linux"
+    inventory: "Ansible Lab"
+    description: "Linux managed nodes"
+    variables:
+      node_type: managed
+
+  - name: "windows"
+    inventory: "Ansible Lab"
+    description: "Windows managed nodes"
+    variables:
+      node_type: managed
+      ansible_connection: winrm
+      ansible_winrm_transport: ntlm
+      ansible_winrm_server_cert_validation: ignore
+      ansible_port: 5985
+
+  - name: "all-nodes"
+    inventory: "Ansible Lab"
+    description: "All ansible nodes"
+    variables:
+      ansible_user: ansible
+
+# Define inventory hosts
+awx_inventory_hosts:
+  - name: "awx"
+    inventory: "Ansible Lab"
+    description: "AWX / control node (local)"
+    variables:
+      ansible_connection: local
+      ansible_host: 127.0.0.1
+    groups:
+      - "controllers"
+      - "all-nodes"
+
+  - name: "test-linux"
+    inventory: "Ansible Lab"
+    description: "Linux test VM"
+    variables:
+      ansible_host: 172.22.0.5
+      ansible_connection: ssh
+    groups:
+      - "linux"
+      - "all-nodes"
+
+  - name: "test-windows"
+    inventory: "Ansible Lab"
+    description: "Windows test VM"
+    variables:
+      ansible_host: 172.22.0.6
+      # Override these in AWX Credentials or inventory/group vars if needed
+      ansible_user: Administrator
+      ansible_connection: winrm
+      ansible_port: 5985
+      ansible_winrm_transport: ntlm
+      ansible_winrm_server_cert_validation: ignore
+    groups:
+      - "windows"
+      - "all-nodes"

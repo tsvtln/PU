@@ -1,0 +1,66 @@
+---
+# AWX Job Templates Configuration
+
+awx_job_templates:
+  # Ping test using the Ansible Lab inventory
+  - name: "Ping Test - Ansible Lab"
+    description: "Test connectivity to all Ansible Lab hosts"
+    job_type: "run"
+    inventory: "Ansible Lab"
+    project: "Demo Project"
+    playbook: "hello_world.yml"
+    credentials:
+      - "SSH - Ansible Lab"
+    verbosity: 1
+    ask_variables_on_launch: false
+    ask_limit_on_launch: true
+    ask_tags_on_launch: false
+
+  # Uncomment these templates once you have your own Git projects configured
+  # with the actual playbook files in your repositories
+  
+  # # System Updates
+  # - name: "System Update - Development"
+  #   description: "Update packages on development servers"
+  #   job_type: "run"
+  #   inventory: "Development"
+  #   project: "Infrastructure Playbooks"
+  #   playbook: "system-update.yml"
+  #   credentials:
+  #     - "SSH - Development"
+  #   verbosity: 0
+  #   ask_variables_on_launch: false
+  #   ask_limit_on_launch: true
+  #   ask_tags_on_launch: false
+  
+  # - name: "System Update - Production"
+  #   description: "Update packages on production servers"
+  #   job_type: "run"
+  #   inventory: "Production"
+  #   project: "Infrastructure Playbooks"
+  #   playbook: "system-update.yml"
+  #   credentials:
+  #     - "SSH - Production"
+  #   verbosity: 0
+  #   ask_variables_on_launch: false
+  #   ask_limit_on_launch: true
+  #   ask_tags_on_launch: false
+  
+  # # Application Deployment
+  # - name: "Deploy Web App - Development"
+  #   description: "Deploy web application to development"
+  #   job_type: "run"
+  #   inventory: "Development"
+  #   project: "Application Deployment"
+  #   playbook: "deploy-web-app.yml"
+  #   credentials:
+  #     - "SSH - Development"
+  #     - "Ansible Vault - Development"
+  #   limit: "web-servers"
+  #   verbosity: 1
+  #   ask_variables_on_launch: true
+  #   ask_limit_on_launch: false
+  #   ask_tags_on_launch: true
+  #   extra_vars:
+  #     app_version: "latest"
+  #     app_environment: "development"

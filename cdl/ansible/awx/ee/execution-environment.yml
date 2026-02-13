@@ -1,0 +1,25 @@
+---
+version: 3
+
+images:
+  base_image:
+    name: quay.io/ansible/awx-ee:latest
+
+dependencies:
+  galaxy: requirements.yml
+  python: requirements.txt
+  system: bindep.txt
+  ansible_core:
+    package_pip: ansible-core>=2.15.0
+  ansible_runner:
+    package_pip: ansible-runner
+
+additional_build_files:
+  - src: /home/azureuser/CAAC/collection/ldc_custom-azure_manager-1.2.2.tar.gz
+    dest: collections/
+
+additional_build_steps:
+  prepend_base:
+    - RUN echo "Building custom AWX EE with ldc_custom.azure_manager collection"
+  append_final:
+    - RUN echo "Custom AWX EE build complete"

@@ -1,0 +1,72 @@
+---
+- name: AWX Configuration - Introduction
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  
+  tasks:
+    - name: Display AWX connection info
+      ansible.builtin.debug:
+        msg: |
+          ========================================
+          AWX Configuration as Code
+          ========================================
+          Connecting to AWX:
+            Host: {{ controller_host | default(lookup('env', 'CONTROLLER_HOST')) }}
+            User: {{ controller_username | default(lookup('env', 'CONTROLLER_USERNAME')) }}
+          ========================================
+
+- name: Step 1 - Configure Users and Organizations
+  ansible.builtin.import_playbook: configure-users.yml
+  tags:
+    - users
+    - organizations
+
+- name: Step 2 - Configure Credentials
+  ansible.builtin.import_playbook: configure-credentials.yml
+  tags:
+    - credentials
+
+- name: Step 3 - Configure Inventories
+  ansible.builtin.import_playbook: configure-inventories.yml
+  tags:
+    - inventories
+
+- name: Step 4 - Configure Projects
+  ansible.builtin.import_playbook: configure-projects.yml
+  tags:
+    - projects
+
+- name: Step 5 - Configure Job Templates
+  ansible.builtin.import_playbook: configure-job-templates.yml
+  tags:
+    - job-templates
+
+- name: Final Summary
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  
+  tasks:
+    - name: Display completion message
+      ansible.builtin.debug:
+        msg: |
+          ========================================
+          AWX Configuration Complete!
+          ========================================
+          Resources created:
+            ✓ Organizations
+            ✓ Users
+            ✓ Credentials
+            ✓ Inventories (Development, Staging, Production)
+            ✓ Projects
+            ✓ Job Templates
+          
+          Next steps:
+            1. Log into AWX portal
+            2. Review created resources
+            3. Update Git URLs in projects
+            4. Run job templates
+          ========================================
+      tags:
+        - always

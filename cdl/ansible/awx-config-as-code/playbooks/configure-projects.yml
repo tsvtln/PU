@@ -1,0 +1,53 @@
+---
+- name: Configure AWX Projects
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  
+  vars_files:
+    - ../vars/projects.yml
+  
+  tasks:
+    - name: Display AWX connection info
+      ansible.builtin.debug:
+        msg: "Connecting to AWX at {{ controller_host | default(lookup('env', 'CONTROLLER_HOST')) }}"
+
+    - name: Create AWX Projects (with SCM)
+      awx.awx.project:
+        name: "{{ item.name }}"
+        description: "{{ item.description }}"
+        organization: "{{ item.organization }}"
+        scm_type: "{{ item.scm_type }}"
+        scm_url: "{{ item.scm_url | default(omit) }}"
+        scm_branch: "{{ item.scm_branch | default(omit) }}"
+        scm_update_on_launch: "{{ item.scm_update_on_launch | default(false) }}"
+        scm_update_cache_timeout: "{{ item.scm_update_cache_timeout | default(0) }}"
+        scm_delete_on_update: "{{ item.scm_delete_on_update | default(false) }}"
+        credential: "{{ item.credential | default(omit) }}"
+        local_path: "{{ item.local_path | default(omit) }}"
+        state: present
+        controller_host: "{{ controller_host | default(lookup('env', 'CONTROLLER_HOST')) }}"
+        controller_username: "{{ controller_username | default(lookup('env', 'CONTROLLER_USERNAME')) }}"
+        controller_password: "{{ controller_password | default(lookup('env', 'CONTROLLER_PASSWORD')) }}"
+        validate_certs: false
+      loop: "{{ awx_projects }}"
+      loop_control:
+        label: "{{ item.name }}"
+      tags:
+        - projects
+
+    - name: Wait for project sync to complete
+      ansible.builtin.pause:
+        seconds: 10
+      when: awx_projects | selectattr('scm_type', 'equalto', 'git') | list | length > 0
+      tags:
+        - projects
+
+    - name: Summary of created projects
+      ansible.builtin.debug:
+        msg:
+          - "Successfully configured AWX Projects:"
+          - "  Total Projects: {{ awx_projects | length }}"
+          - "  Project Names: {{ awx_projects | map(attribute='name') | list }}"
+      tags:
+        - always

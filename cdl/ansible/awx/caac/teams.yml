@@ -1,0 +1,6 @@
+---
+controller_teams_all:
+  - name: Pepegas
+    organization: AWXPOC
+    description: POC team
+    state: present

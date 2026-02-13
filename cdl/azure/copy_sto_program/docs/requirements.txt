@@ -1,0 +1,9 @@
+azure-identity>=1.12.0
+azure-mgmt-storage>=21.0.0
+azure-mgmt-resource>=23.0.0
+azure-storage-file-share>=12.14.0
+azure-core>=1.28.0
+python-dotenv>=1.0.0
+python-decouple>=3.8
+urllib3>=1.26.0
+

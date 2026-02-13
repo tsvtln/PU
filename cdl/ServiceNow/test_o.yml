@@ -1,0 +1,63 @@
+---
+##########################
+## CMDB Discovery check
+- hosts: all
+  gather_facts: false
+  vars:
+    snow_table: "cmdb_ci_server"
+    snow_fields: "name,os_name,operational_status"
+  tasks:
+    - name: "Initialize variables"
+      ansible.builtin.set_fact:
+        windows_names: []
+        linux_names: []
+
+    - name: "Gather Windows servers"
+      ansible.builtin.uri:
+        url: "{{ snow_uri }}/api/now/table/{{ snow_table }}?sysparm_fields={{ snow_fields }}&sysparm_limit=1000"
+        user: "{{ snow_username }}"
+        password: "{{ snow_password }}"
+        method: GET
+        force_basic_auth: true
+        headers:
+          Accept: "application/json"
+          Content-Type: "application/json"
+      register: all_servers
+      delegate_to: localhost
+      ignore_errors: true
+      #when: inventory_hostname in groups['windows'] or inventory_hostname in groups['windows_joined'] or inventory_hostname in groups['windows_non_joined']
+
+    - name: "Handle Windows Connection"
+      ansible.builtin.set_fact:
+        windows_names: "{{ windows_names + [item.name] }}"
+      loop: "{{ all_servers.json.result | default([]) }}"
+      when:
+        - item.name is defined
+        - item.os_name is defined
+        - "'windows' in item.os_name.lower() or 'microsoft' in item.os_name.lower()"
+
+    - name: "Gather Linux servers"
+      ansible.builtin.set_fact:
+        linux_names: "{{ linux_names + [item.name] }}"
+      loop: "{{ all_servers.json.result | default([]) }}"
+      when:
+        - item.name is defined
+        - item.os_name is defined
+        - "'linux' in item.os_name.lower() or 'red hat' in item.os_name.lower() or 'ubuntu' in item.os_name.lower() or 'centos' in item.os_name.lower()"
+
+    - name: "Combine all server names"
+      ansible.builtin.set_fact:
+        all_server_names: "{{ windows_names + linux_names | unique }}"
+
+    - name: "Display All Server Names"
+      ansible.builtin.debug:
+        msg: "{{ all_server_names | join(', ') }}"
+
+    - name: "Display results"
+      ansible.builtin.debug:
+        msg:
+          - "Full result: {{ all_servers.json.result | default([]) }}"
+          - "Windows servers: {{ windows_names }}"
+          - "Linux servers: {{ linux_names }}"
+
+##########################

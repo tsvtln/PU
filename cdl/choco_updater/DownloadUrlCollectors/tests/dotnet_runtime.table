@@ -1,0 +1,43 @@
+<table class="table table-bordered" aria-labelledby="supported-versions">
+        <caption id="supported-versions" class="sr-only">Supported versions</caption>
+        <thead>
+            <tr>
+                <th>Version</th>
+                <th>Original release date</th>
+                <th>Latest patch version</th>
+                <th>Patch release date</th>
+                <th>Release type</th>
+                <th>Support phase</th>
+                <th>End of support</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>.NET 10</td>
+                <td>November 11, 2025</td>
+                <td>10.0.2</td>
+                <td>January 13, 2026</td>
+                <td>LTS</td>
+                <td>Active</td>
+                <td>November 14, 2028</td>
+            </tr>
+            <tr>
+                <td>.NET 9</td>
+                <td>November 12, 2024</td>
+                <td>9.0.12</td>
+                <td>January 13, 2026</td>
+                <td>STS</td>
+                <td>Active</td>
+                <td>November 10, 2026</td>
+            </tr>
+            <tr>
+                <td>.NET 8</td>
+                <td>November 14, 2023</td>
+                <td>8.0.23</td>
+                <td>January 13, 2026</td>
+                <td>LTS</td>
+                <td>Active</td>
+                <td>November 10, 2026</td>
+            </tr>
+        </tbody>
+    </table>

@@ -1,0 +1,16 @@
+certifi
+cffi
+charset-normalizer
+cryptography
+idna
+msal
+msal-extensions
+pycparser
+PyJWT
+pypsrp
+pyspnego
+requests
+sspilib
+typing_extensions
+urllib3
+

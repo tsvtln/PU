@@ -1,0 +1,47 @@
+---
+# AWX Projects Configuration
+
+awx_projects:
+  # Comment out Git projects until you have real repositories
+  # Uncomment and update URLs when ready
+  
+  # - name: "Infrastructure Playbooks"
+  #   description: "Common infrastructure automation playbooks"
+  #   organization: "Default"
+  #   scm_type: "git"
+  #   scm_url: "https://github.com/your-org/infrastructure-playbooks.git"
+  #   scm_branch: "main"
+  #   scm_update_on_launch: true
+  #   scm_update_cache_timeout: 300
+  #   scm_delete_on_update: false
+  #   credential: "GitHub - Personal"
+  
+  # - name: "Application Deployment"
+  #   description: "Application deployment playbooks"
+  #   organization: "Default"
+  #   scm_type: "git"
+  #   scm_url: "https://github.com/your-org/app-deployment.git"
+  #   scm_branch: "main"
+  #   scm_update_on_launch: true
+  #   scm_update_cache_timeout: 300
+  #   credential: "GitHub - Personal"
+  
+  # - name: "Configuration Management"
+  #   description: "Server configuration management"
+  #   organization: "Default"
+  #   scm_type: "git"
+  #   scm_url: "https://github.com/your-org/config-management.git"
+  #   scm_branch: "main"
+  #   scm_update_on_launch: true
+  #   scm_update_cache_timeout: 300
+  #   credential: "GitHub - Personal"
+  
+  - name: "Demo Project"
+    description: "Demo playbooks included with AWX"
+    organization: "Default"
+    scm_type: "git"
+    scm_url: "https://github.com/ansible/ansible-tower-samples"
+    scm_branch: "master"
+    scm_update_on_launch: true
+    scm_update_cache_timeout: 300
+    scm_delete_on_update: false

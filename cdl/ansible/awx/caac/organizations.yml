@@ -1,0 +1,5 @@
+---
+controller_organizations_all:
+  - name: AWXPOC
+    description: AWX POC organization
+    state: present

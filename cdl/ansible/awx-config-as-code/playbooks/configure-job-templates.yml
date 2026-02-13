@@ -1,0 +1,49 @@
+---
+- name: Configure AWX Job Templates
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  
+  vars_files:
+    - ../vars/job-templates.yml
+  
+  tasks:
+    - name: Display AWX connection info
+      ansible.builtin.debug:
+        msg: "Connecting to AWX at {{ controller_host | default(lookup('env', 'CONTROLLER_HOST')) }}"
+
+    - name: Create AWX Job Templates
+      awx.awx.job_template:
+        name: "{{ item.name }}"
+        description: "{{ item.description }}"
+        job_type: "{{ item.job_type }}"
+        inventory: "{{ item.inventory }}"
+        project: "{{ item.project }}"
+        playbook: "{{ item.playbook }}"
+        credentials: "{{ item.credentials | default([]) }}"
+        limit: "{{ item.limit | default(omit) }}"
+        verbosity: "{{ item.verbosity | default(0) }}"
+        extra_vars: "{{ item.extra_vars | default({}) }}"
+        ask_variables_on_launch: "{{ item.ask_variables_on_launch | default(false) }}"
+        ask_limit_on_launch: "{{ item.ask_limit_on_launch | default(false) }}"
+        ask_tags_on_launch: "{{ item.ask_tags_on_launch | default(false) }}"
+        ask_inventory_on_launch: "{{ item.ask_inventory_on_launch | default(false) }}"
+        state: present
+        controller_host: "{{ controller_host | default(lookup('env', 'CONTROLLER_HOST')) }}"
+        controller_username: "{{ controller_username | default(lookup('env', 'CONTROLLER_USERNAME')) }}"
+        controller_password: "{{ controller_password | default(lookup('env', 'CONTROLLER_PASSWORD')) }}"
+        validate_certs: false
+      loop: "{{ awx_job_templates }}"
+      loop_control:
+        label: "{{ item.name }}"
+      tags:
+        - job-templates
+
+    - name: Summary of created job templates
+      ansible.builtin.debug:
+        msg:
+          - "Successfully configured AWX Job Templates:"
+          - "  Total Templates: {{ awx_job_templates | length }}"
+          - "  Template Names: {{ awx_job_templates | map(attribute='name') | list }}"
+      tags:
+        - always

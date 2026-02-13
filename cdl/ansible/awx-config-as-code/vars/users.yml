@@ -1,0 +1,52 @@
+---
+# AWX Organizations Configuration
+awx_organizations:
+  - name: "Home"
+    description: "Home Lab Environment"
+  - name: "Dev"
+    description: "Development Environment"
+  - name: "Prod"
+    description: "Production Environment"
+
+# AWX Users Configuration
+awx_users:
+  - username: sree
+    email: sree@example.com
+    first_name: Sree
+    last_name: Kanthmatturthi
+    password: "{{ vault_password_sree | default('ChangeMe123!') }}"
+    is_superuser: true
+    is_system_auditor: false
+    organization: "Default"
+
+  - username: adam
+    email: adam@example.com
+    first_name: Adam
+    last_name: Smith
+    password: "{{ vault_password_adam | default('ChangeMe123!') }}"
+    is_superuser: false
+    is_system_auditor: false
+    organization: "Default"
+
+  - username: eve
+    email: eve@example.com
+    first_name: Eve
+    last_name: Johnson
+    password: "{{ vault_password_eve | default('ChangeMe123!') }}"
+    is_superuser: false
+    is_system_auditor: true
+    organization: "Default"
+
+# User roles per organization
+user_roles:
+  - username: sree
+    organization: "Default"
+    role: admin
+
+  - username: adam
+    organization: "Default"
+    role: member
+
+  - username: eve
+    organization: "Default"
+    role: auditor

@@ -1,0 +1,395 @@
+---
+- name: Playbook to configure AWX controller post installation (CAAC for AWX)
+  hosts: all
+  vars_files:
+    - ../vault.yml
+    - ./organizations.yml
+    - ./teams.yml
+    - ./users.yml
+    - ./execution_environments.yml
+    - ./projects.yml
+    - ./roles.yml
+    - ./job_templates.yml
+    - ./labels.yml
+    - ./credentials.yml
+    - ./scm_credentials.yml
+    - ./credential_types.yml
+    - ./inventories.yml
+
+  tasks:
+    - name: Derive controller hostname/IP from inventory
+      tags: always
+      ansible.builtin.set_fact:
+        controller_hostname_raw: "{{ hostvars[groups['automationcontroller'][0]].ansible_host | default(hostvars[groups['automationcontroller'][0]].inventory_hostname) }}"
+
+    - name: Set controller connection defaults (host/user/pass)
+      tags: always
+      ansible.builtin.set_fact:
+        controller_hostname: "{{ controller_hostname | default(controller_hostname_raw) }}"
+        controller_username: "{{ controller_username | default(api_admin | default('admin')) }}"
+        controller_password: "{{ controller_password | default(aap_password | default(awx_password | default('')) ) }}"
+        controller_port: "{{ controller_port | default(hostvars[groups['automationcontroller'][0]].controller_port | default('')) }}"
+        controller_host: "{{ controller_host | default(controller_hostname | default(controller_hostname_raw)) }}"
+
+    - name: Normalize controller_host to include scheme (http://)
+      tags: always
+      ansible.builtin.set_fact:
+        controller_host: >-
+          {{
+            (controller_host is match('^https?://'))
+            | ternary(controller_host, 'http://' ~ controller_host)
+          }}
+
+    - name: Append controller_port to controller_host when provided
+      tags: always
+      ansible.builtin.set_fact:
+        controller_host: >-
+          {{
+            (controller_port | string | length > 0)
+            | ternary(
+                (controller_host | regex_replace('/$', '')) ~ ':' ~ (controller_port | string),
+                controller_host
+              )
+          }}
+
+    - name: DEBUG controller connection parameters
+      tags: always
+      ansible.builtin.debug:
+        msg:
+          - "controller_hostname_raw={{ controller_hostname_raw | default('UNDEF') }}"
+          - "controller_hostname={{ controller_hostname | default('UNDEF') }}"
+          - "controller_host={{ controller_host | default('UNDEF') }}"
+          - "controller_username={{ controller_username | default('UNDEF') }}"
+          - "controller_password_set={{ (controller_password | default('') | length) > 0 }}"
+      delegate_to: localhost
+      run_once: true
+
+    - name: Preflight - check AWX API is reachable on controller_host
+      tags: always
+      ansible.builtin.uri:
+        url: "{{ controller_host }}/api/v2/ping/"
+        method: GET
+        return_content: true
+        status_code: [200, 401, 403]
+        validate_certs: false
+        timeout: 10
+      delegate_to: localhost
+      run_once: true
+
+    - name: Fail early if AWX controller_password is not set
+      tags: always
+      ansible.builtin.assert:
+        that:
+          - controller_password is defined
+          - (controller_password | length) > 0
+        fail_msg: >-
+          controller_password is empty/undefined. Set awx_password (AWX GUI/API admin password) in vault.yml.
+
+
+    - name: DEBUG get env vars
+      tags: always
+      ansible.builtin.shell: |
+        env
+      delegate_to: localhost
+      register: env_vars
+
+    - name: DEBUG set default
+      tags: always
+      ansible.builtin.set_fact:
+        controller_dependency_check: false
+        ah_request_timeout: 60
+
+    - name: DEBUG set fact secure_logging dynamic
+      tags: always
+      ansible.builtin.set_fact:
+        {"{{ (item | split('='))[0] }}":"{{ (item | split('='))[1] }}"}
+      with_items: "{{ env_vars.stdout_lines | select('match', '^controller_configuration.*') | list }}"
+
+    - name: DEBUG Display secure_logging dynamic
+      tags: always
+      ansible.builtin.debug:
+        msg:
+          - "key={{ (item | split('='))[0] }}, hostvar={{hostvars['localhost'][(item | split('='))[0]]}}"
+      with_items: "{{ env_vars.stdout_lines | select('match', '^controller_configuration.*') | list }}"
+
+    - name: show all the hosts from inventory
+      ansible.builtin.debug:
+        msg: "{{ item }}"
+      with_inventory_hostnames:
+        - all
+
+    - name: Display inventory groups
+      ansible.builtin.debug:
+        msg: "groups: {{ groups }}"
+
+    - name: Display facts
+      ansible.builtin.debug:
+        msg: "{{ item }}"
+      loop:
+        - groups['automationcontroller']
+
+    - name: print variables
+      tags: always
+      debug:
+        msg:
+          - "env : {{ env | default('unknown') }}"
+          - "aap_username : {{ aap_username | default('unknown') }}"
+          - "api_admin : {{ api_admin | default('unknown') }}"
+          - "controller_hostname : {{ controller_hostname | default('unknown') }}"
+          - "controller_username : {{ controller_username | default('unknown') }}"
+          - "controller_configuration_settings_secure_logging  : {{ controller_configuration_settings_secure_logging  | default('unknown') }}"
+          - "controller_configuration_secure_logging  : {{ controller_configuration_secure_logging  | default('unknown') }}"
+          - "controller_configuration_async_retries : {{ controller_configuration_async_retries | default('unknown') }}"
+          - "controller_dependency_check  : {{ controller_dependency_check  | default('unknown') }}"
+
+    - name: Call dispatch role
+      tags: always
+      ansible.builtin.include_role:
+        name: infra.controller_configuration.dispatch
+
+    - name: Create/sync AWX organizations
+      awx.awx.organization:
+        name: "{{ item.name }}"
+        description: "{{ item.description | default('') }}"
+        state: "{{ item.state | default('present') }}"
+        controller_host: "{{ controller_host }}"
+        controller_username: "{{ controller_username }}"
+        controller_password: "{{ controller_password }}"
+        validate_certs: false
+      loop: "{{ controller_organizations_all | default([]) }}"
+      when: controller_organizations_all is defined
+      delegate_to: localhost
+      run_once: true
+      tags: awx_organizations
+
+    - name: Create/sync AWX teams
+      awx.awx.team:
+        name: "{{ item.name }}"
+        organization: "{{ item.organization }}"
+        description: "{{ item.description | default('') }}"
+        state: "{{ item.state | default('present') }}"
+        controller_host: "{{ controller_host }}"
+        controller_username: "{{ controller_username }}"
+        controller_password: "{{ controller_password }}"
+        validate_certs: false
+      loop: "{{ controller_teams_all | default([]) }}"
+      when: controller_teams_all is defined
+      delegate_to: localhost
+      run_once: true
+      tags: awx_teams
+
+    - name: Create/sync AWX users
+      awx.awx.user:
+        username: "{{ item.username }}"
+        is_superuser: "{{ item.is_superuser | default(false) }}"
+        is_system_auditor: "{{ item.is_system_auditor | default(omit) }}"
+        email: "{{ item.email | default(omit) }}"
+        first_name: "{{ item.first_name | default(omit) }}"
+        last_name: "{{ item.last_name | default(omit) }}"
+        password: "{{ item.password | default(omit) }}"
+        state: "{{ item.state | default('present') }}"
+        controller_host: "{{ controller_host }}"
+        controller_username: "{{ controller_username }}"
+        controller_password: "{{ controller_password }}"
+        validate_certs: false
+      loop: "{{ controller_users_all | default([]) }}"
+      when: controller_users_all is defined
+      delegate_to: localhost
+      run_once: true
+      tags: awx_users
+
+    - name: Create/sync AWX execution environments
+      awx.awx.execution_environment:
+        name: "{{ item.name }}"
+        image: "{{ item.image }}"
+        organization: "{{ item.organization | default(omit) }}"
+        description: "{{ item.description | default('') }}"
+        pull: "{{ item.pull | default('missing') }}"
+        credential: "{{ item.credential | default(omit) }}"
+        state: "{{ item.state | default('present') }}"
+        controller_host: "{{ controller_host }}"
+        controller_username: "{{ controller_username }}"
+        controller_password: "{{ controller_password }}"
+        validate_certs: false
+      loop: "{{ controller_execution_environments_all | default([]) }}"
+      when: controller_execution_environments_all is defined
+      delegate_to: localhost
+      run_once: true
+      tags: awx_execution_environments
+
+    # Credentials must be created before projects so scm_credential can be resolved.
+    - name: Create/sync AWX credential types
+      awx.awx.credential_type:
+        name: "{{ item.name }}"
+        description: "{{ item.description }}"
+        kind: "{{ item.kind }}"
+        inputs: "{{ item.inputs }}"
+        injectors: "{{ item.injectors }}"
+        state: present
+        controller_host: "{{ controller_host }}"
+        controller_username: "{{ controller_username }}"
+        controller_password: "{{ controller_password }}"
+        validate_certs: false
+      loop: "{{ controller_credential_types_all }}"
+      when: controller_credential_types_all is defined
+      delegate_to: localhost
+      run_once: true
+      tags: awx_credential_types
+
+    - name: Create/sync AWX credentials
+      awx.awx.credential:
+        name: "{{ item.name }}"
+        credential_type: "{{ item.credential_type }}"
+        organization: "{{ item.organization }}"
+        description: "{{ item.description }}"
+        inputs: "{{ item.inputs }}"
+        state: present
+        controller_host: "{{ controller_host }}"
+        controller_username: "{{ controller_username }}"
+        controller_password: "{{ controller_password }}"
+        validate_certs: false
+      loop: "{{ (controller_credentials_all | default([])) + (controller_scm_credentials_all | default([])) }}"
+      when: (controller_credentials_all is defined) or (controller_scm_credentials_all is defined)
+      delegate_to: localhost
+      run_once: true
+      tags: awx_credentials
+
+    - name: Create/sync AWX projects from projects.yml
+      awx.awx.project:
+        name: "{{ item.name }}"
+        description: "{{ item.description | default(omit) }}"
+        organization: "{{ item.organization }}"
+        scm_type: "{{ item.scm_type }}"
+        scm_url: "{{ item.scm_url }}"
+        scm_branch: "{{ item.scm_branch | default(omit) }}"
+        scm_clean: "{{ item.scm_clean | default(omit) }}"
+        scm_update_on_launch: "{{ item.scm_update_on_launch | default(omit) }}"
+        scm_credential: "{{ item.scm_credential | default(omit) }}"
+        update_project: "{{ item.update_project | default(omit) }}"
+        wait: "{{ item.wait | default(omit) }}"
+        state: present
+        controller_host: "{{ controller_host }}"
+        controller_username: "{{ controller_username }}"
+        controller_password: "{{ controller_password }}"
+        validate_certs: false
+      loop: "{{ controller_projects_all | default([]) }}"
+      when: controller_projects_all is defined
+      delegate_to: localhost
+      run_once: true
+      tags: awx_projects
+
+    - name: Update/sync AWX projects (ensure playbooks are available)
+      awx.awx.project_update:
+        project: "{{ item.name }}"
+        wait: true
+        timeout: 600
+        controller_host: "{{ controller_host }}"
+        controller_username: "{{ controller_username }}"
+        controller_password: "{{ controller_password }}"
+        validate_certs: false
+      loop: "{{ controller_projects_all | default([]) }}"
+      when: controller_projects_all is defined
+      delegate_to: localhost
+      run_once: true
+      tags: awx_projects_update
+
+    - name: Create/sync AWX labels
+      awx.awx.label:
+        name: "{{ item.name }}"
+        organization: "{{ item.organization }}"
+        state: "{{ item.state | default('present') }}"
+        controller_host: "{{ controller_host }}"
+        controller_username: "{{ controller_username }}"
+        controller_password: "{{ controller_password }}"
+        validate_certs: false
+      loop: "{{ controller_labels_all | default([]) }}"
+      when: controller_labels_all is defined
+      delegate_to: localhost
+      run_once: true
+      tags: awx_labels
+
+    # Inventories must exist before job templates can reference them.
+    - name: Create/sync AWX inventories
+      awx.awx.inventory:
+        name: "{{ item.name }}"
+        description: "{{ item.description | default('') }}"
+        organization: "{{ item.organization }}"
+        variables: "{{ item.variables | default({}) }}"
+        state: present
+        controller_host: "{{ controller_host }}"
+        controller_username: "{{ controller_username }}"
+        controller_password: "{{ controller_password }}"
+        validate_certs: false
+      loop: "{{ inventories | default([]) }}"
+      when: inventories is defined
+      delegate_to: localhost
+      run_once: true
+      tags: awx_inventories
+
+    - name: Create/sync AWX hosts
+      awx.awx.host:
+        name: "{{ item.1.name }}"
+        description: "{{ item.1.description | default('') }}"
+        inventory: "{{ item.0.name }}"
+        variables: "{{ item.1.variables | default({}) }}"
+        state: present
+        controller_host: "{{ controller_host }}"
+        controller_username: "{{ controller_username }}"
+        controller_password: "{{ controller_password }}"
+        validate_certs: false
+      loop: "{{ query('subelements', (inventories | default([])), 'hosts', {'skip_missing': True}) }}"
+      when: inventories is defined
+      delegate_to: localhost
+      run_once: true
+      tags: awx_hosts
+
+    - name: Create/sync AWX job templates
+      awx.awx.job_template:
+        name: "{{ item.name }}"
+        project: "{{ item.project }}"
+        job_type: "{{ item.job_type }}"
+        playbook: "{{ item.playbook }}"
+        inventory: "{{ item.inventory }}"
+        execution_environment: "{{ item.execution_environment }}"
+        concurrent_jobs_enabled: "{{ item.concurrent_jobs_enabled }}"
+        ask_variables_on_launch: "{{ item.ask_variables_on_launch }}"
+        limit: "{{ item.limit }}"
+        verbosity: "{{ item.verbosity }}"
+        labels: "{{ item.labels }}"
+        credentials: "{{ item.credentials }}"
+        extra_vars: "{{ item.extra_vars }}"
+        state: present
+        controller_host: "{{ controller_host }}"
+        controller_username: "{{ controller_username }}"
+        controller_password: "{{ controller_password }}"
+        validate_certs: false
+      loop: "{{ controller_templates_all | default([]) }}"
+      when: controller_templates_all is defined
+      delegate_to: localhost
+      run_once: true
+      tags: awx_job_templates
+
+    - name: Create/sync AWX roles
+      # awx.awx.role manages role *grants* (RBAC), not custom role definitions.
+      # Use it to grant a role (e.g. admin) to users/teams on supported resources.
+      awx.awx.role:
+        user: "{{ item.user | default(omit) }}"
+        team: "{{ item.team | default(omit) }}"
+        role: "{{ item.role }}"
+        target_team: "{{ item.target_team | default(omit) }}"
+        project: "{{ item.project | default(omit) }}"
+        job_template: "{{ item.job_template | default(omit) }}"
+        inventory: "{{ item.inventory | default(omit) }}"
+        credential: "{{ item.credential | default(omit) }}"
+        organization: "{{ item.organization | default(omit) }}"
+        state: present
+        controller_host: "{{ controller_host }}"
+        controller_username: "{{ controller_username }}"
+        controller_password: "{{ controller_password }}"
+        validate_certs: false
+      loop: "{{ controller_role_grants_all | default([]) }}"
+      when: controller_role_grants_all is defined
+      delegate_to: localhost
+      run_once: true
+      tags: awx_roles
+

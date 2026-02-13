@@ -1,0 +1,15 @@
+---
+inventories:
+  - name: awx_demo_inventory
+    description: Demo inventory for CAAC
+    organization: AWXPOC
+    variables: {}
+    hosts:
+      - name: test-windows
+        description: Windows test host
+        variables:
+          ansible_host: 172.22.0.6
+      - name: test-linux
+        description: Linux test host
+        variables:
+          ansible_host: 172.22.0.5

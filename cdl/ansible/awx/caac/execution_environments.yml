@@ -1,0 +1,7 @@
+---
+controller_execution_environments_all:
+  - name: AWX EE (latest)
+    image: quay.io/ansible/awx-ee:latest
+    pull: missing
+    description: Globally available default AWX execution environment
+    state: present

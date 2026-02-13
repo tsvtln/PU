@@ -1,0 +1,46 @@
+---
+# Role grants (RBAC) applied in AWX
+# Each item grants a built-in role to a user/team on a specific supported resource.
+controller_role_grants_all:
+  # Keep admin as org admin (useful bootstrap / break-glass)
+  - role: admin
+    user: admin
+    organization: AWXPOC
+
+  # Pepegas: maximum permissions on all CAAC-managed supported objects
+
+  # Credentials
+  - role: admin
+    team: Pepegas
+    credential: AWX_WINDOWS_CRED
+
+  - role: admin
+    team: Pepegas
+    credential: AWX_LINUX_CRED
+
+  - role: admin
+    team: Pepegas
+    credential: AWX_AZDO_PAT
+
+  # Projects
+  - role: admin
+    team: Pepegas
+    project: awx_demo_project_windows
+
+  - role: admin
+    team: Pepegas
+    project: awx_demo_project_linux
+
+  # Inventory
+  - role: admin
+    team: Pepegas
+    inventory: awx_demo_inventory
+
+  # Job templates
+  - role: admin
+    team: Pepegas
+    job_template: awx_demo_job_template_windows
+
+  - role: admin
+    team: Pepegas
+    job_template: awx_demo_job_template_linux

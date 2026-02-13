@@ -1,0 +1,57 @@
+---
+controller_templates_all:
+  - name: awx_demo_job_template_windows
+    project: awx_demo_project_windows
+    job_type: run
+    playbook: main.yml
+    inventory: awx_demo_inventory
+    execution_environment: "AWX EE (latest)"
+    concurrent_jobs_enabled: false
+    ask_variables_on_launch: true
+    become_enabled: true
+    limit: "mandatory"
+    verbosity: 0
+    labels:
+      - DEMO
+    credentials:
+      - AWX_WINDOWS_CRED
+    extra_vars:
+      demo_var: "value"
+
+  - name: awx_demo_job_template_linux
+    project: awx_demo_project_linux
+    job_type: run
+    playbook: main.yml
+    inventory: awx_demo_inventory
+    execution_environment: "AWX EE (latest)"
+    concurrent_jobs_enabled: false
+    ask_variables_on_launch: true
+    become_enabled: true
+    limit: "mandatory"
+    verbosity: 0
+    labels:
+      - DEMO
+    credentials:
+      - AWX_LINUX_CRED
+    extra_vars:
+      demo_var: "value"
+
+  - name: Module Test (PowerJob)
+    project: ModuleTestPowerJob
+    job_type: run
+    playbook: main.yml
+    inventory: awx_demo_inventory
+    execution_environment: "AWX EE (latest)"
+    concurrent_jobs_enabled: false
+    ask_variables_on_launch: true
+    become_enabled: true
+    limit: "mandatory"
+    verbosity: 0
+    labels:
+      - DEMO
+    credentials:
+      - CRE_LDC_AAP_SPN_Credential%prd%
+      - CRE_LDC_AAP_SPN_China_Credential%prd%
+    extra_vars:
+      target_vm: "<target_vm_name>"
+      action: "start"

@@ -1,0 +1,3 @@
+# Python dependencies for custom AWX EE
+# The azure.azcollection will bring its own Azure SDK dependencies
+# Only add additional packages not provided by collections here

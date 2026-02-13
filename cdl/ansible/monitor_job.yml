@@ -1,0 +1,52 @@
+- name: 'stop_vm | Set AAP Tower name (hardcoded for prod)'
+  ansible.builtin.set_fact:
+    tower_name: "atwctl.d1.ad.local"
+
+- name: 'stop_vm | Start AAP job to stop the VM'
+  ansible.builtin.uri:
+    # url: "https://{{ tower_name }}/api/v2/job_templates/?name__exact=JOT_LDC_role_az_vm_power_c%dev%&launch=true"
+    url: "https://{{ tower_name }}/api/v2/job_templates/403/launch/"
+    method: POST
+    user: "{{ ansible_api_user }}"
+    password: "{{ ansible_api_passwd }}"
+    force_basic_auth: true
+    body_format: json
+    body:
+      extra_vars:
+        target_vm: "{{ vm_name }}"
+        action: "{{ vm_action }}"
+    headers:
+      Content-Type: application/json
+    status_code: [200, 201]
+  delegate_to: localhost
+  register: stop_vm_result
+  no_log: false
+
+- name: 'stop_vm | Monitor stop VM job until finished'
+  ansible.builtin.uri:
+    url: "https://{{ tower_name }}/api/v2/jobs/{{ stop_vm_result.json.id }}"
+    method: GET
+    user: "{{ ansible_api_user }}"
+    password: "{{ ansible_api_passwd }}"
+    force_basic_auth: true
+    headers:
+      Content-Type: application/json
+    return_content: true
+  register: stop_vm_status
+  delegate_to: localhost
+  until: stop_vm_status.json.status not in ['pending', 'waiting', 'running']
+  retries: 150
+  delay: 10
+  no_log: true
+
+- name: 'stop_vm | Assert stop job completed successfully'
+  ansible.builtin.assert:
+    that:
+      - stop_vm_status.json.status == "successful"
+    fail_msg: "VM stop job {{ stop_vm_result.json.id }} failed with status: {{ stop_vm_status.json.status }}"
+    success_msg: "VM stop job completed successfully"
+
+
+# Credentials needed:
+# Password for LDC AAP PROD ADMIN api access
+

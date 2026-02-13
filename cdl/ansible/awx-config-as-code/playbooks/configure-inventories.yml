@@ -1,0 +1,105 @@
+---
+- name: Configure AWX Inventories
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  
+  vars_files:
+    - ../vars/inventories.yml
+  
+  tasks:
+    - name: Display AWX connection info
+      ansible.builtin.debug:
+        msg: "Connecting to AWX at {{ controller_host | default(lookup('env', 'CONTROLLER_HOST')) }}"
+
+    - name: Ensure organizations exist
+      awx.awx.organization:
+        name: "{{ item }}"
+        description: "Organization for {{ item }}"
+        state: present
+        controller_host: "{{ controller_host | default(lookup('env', 'CONTROLLER_HOST')) }}"
+        controller_username: "{{ controller_username | default(lookup('env', 'CONTROLLER_USERNAME')) }}"
+        controller_password: "{{ controller_password | default(lookup('env', 'CONTROLLER_PASSWORD')) }}"
+        validate_certs: false
+      loop:
+        - Default
+      tags:
+        - organizations
+
+    - name: Create AWX Inventories
+      awx.awx.inventory:
+        name: "{{ item.name }}"
+        description: "{{ item.description }}"
+        organization: "{{ item.organization }}"
+        variables: "{{ item.variables | default({}) | to_json }}"
+        state: present
+        controller_host: "{{ controller_host | default(lookup('env', 'CONTROLLER_HOST')) }}"
+        controller_username: "{{ controller_username | default(lookup('env', 'CONTROLLER_USERNAME')) }}"
+        controller_password: "{{ controller_password | default(lookup('env', 'CONTROLLER_PASSWORD')) }}"
+        validate_certs: false
+      loop: "{{ awx_inventories }}"
+      loop_control:
+        label: "{{ item.name }}"
+      tags:
+        - inventories
+
+    - name: Create AWX Inventory Groups
+      awx.awx.group:
+        name: "{{ item.name }}"
+        description: "{{ item.description }}"
+        inventory: "{{ item.inventory }}"
+        variables: "{{ item.variables | default({}) | to_json }}"
+        state: present
+        controller_host: "{{ controller_host | default(lookup('env', 'CONTROLLER_HOST')) }}"
+        controller_username: "{{ controller_username | default(lookup('env', 'CONTROLLER_USERNAME')) }}"
+        controller_password: "{{ controller_password | default(lookup('env', 'CONTROLLER_PASSWORD')) }}"
+        validate_certs: false
+      loop: "{{ awx_inventory_groups }}"
+      loop_control:
+        label: "{{ item.inventory }}/{{ item.name }}"
+      tags:
+        - groups
+
+    - name: Create AWX Inventory Hosts
+      awx.awx.host:
+        name: "{{ item.name }}"
+        description: "{{ item.description | default(omit) }}"
+        inventory: "{{ item.inventory }}"
+        variables: "{{ item.variables | default({}) | to_json }}"
+        state: present
+        controller_host: "{{ controller_host | default(lookup('env', 'CONTROLLER_HOST')) }}"
+        controller_username: "{{ controller_username | default(lookup('env', 'CONTROLLER_USERNAME')) }}"
+        controller_password: "{{ controller_password | default(lookup('env', 'CONTROLLER_PASSWORD')) }}"
+        validate_certs: false
+      loop: "{{ awx_inventory_hosts }}"
+      loop_control:
+        label: "{{ item.inventory }}/{{ item.name }}"
+      tags:
+        - hosts
+
+    - name: Add hosts to groups
+      awx.awx.group:
+        name: "{{ item.1 }}"
+        inventory: "{{ item.0.inventory }}"
+        hosts:
+          - "{{ item.0.name }}"
+        state: present
+        controller_host: "{{ controller_host | default(lookup('env', 'CONTROLLER_HOST')) }}"
+        controller_username: "{{ controller_username | default(lookup('env', 'CONTROLLER_USERNAME')) }}"
+        controller_password: "{{ controller_password | default(lookup('env', 'CONTROLLER_PASSWORD')) }}"
+        validate_certs: false
+      loop: "{{ awx_inventory_hosts | subelements('groups') }}"
+      loop_control:
+        label: "{{ item.0.inventory }}/{{ item.1 }}/{{ item.0.name }}"
+      tags:
+        - host-groups
+
+    - name: Summary of created resources
+      ansible.builtin.debug:
+        msg:
+          - "Successfully configured AWX Inventories:"
+          - "  Inventories: {{ awx_inventories | map(attribute='name') | list }}"
+          - "  Groups: {{ awx_inventory_groups | length }}"
+          - "  Hosts: {{ awx_inventory_hosts | length }}"
+      tags:
+        - always

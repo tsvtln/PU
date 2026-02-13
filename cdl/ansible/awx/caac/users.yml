@@ -1,0 +1,5 @@
+---
+controller_users_all:
+  - username: admin
+    is_superuser: true
+    state: present

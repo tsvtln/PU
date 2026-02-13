@@ -1,0 +1,16 @@
+# System-level dependencies
+# Build tools needed for compiling Python packages
+gcc [platform:rpm]
+gcc [platform:dpkg]
+python3-devel [platform:rpm]
+python3-dev [platform:dpkg]
+git [platform:rpm]
+git [platform:dpkg]
+libxml2-devel [platform:rpm]
+libxml2-dev [platform:dpkg]
+libxslt-devel [platform:rpm]
+libxslt-dev [platform:dpkg]
+libffi-devel [platform:rpm]
+libffi-dev [platform:dpkg]
+openssl-devel [platform:rpm]
+libssl-dev [platform:dpkg]

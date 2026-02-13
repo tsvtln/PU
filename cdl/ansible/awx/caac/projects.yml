@@ -1,0 +1,37 @@
+---
+controller_projects_all:
+  - name: awx_demo_project_windows
+    description: Demo project for AWX CAAC
+    organization: AWXPOC
+    scm_type: git
+    scm_url: https://LDC-Technology-and-Operations@dev.azure.com/LDC-Technology-and-Operations/ATW-AAP-Ansible/_git/test_AWXPOC
+    scm_branch: test
+    scm_clean: true
+    scm_update_on_launch: true
+    scm_credential: "AWX_AZDO_PAT"
+    update_project: true
+    wait: true
+
+  - name: awx_demo_project_linux
+    description: Demo project for AWX CAAC
+    organization: AWXPOC
+    scm_type: git
+    scm_url: https://LDC-Technology-and-Operations@dev.azure.com/LDC-Technology-and-Operations/ATW-AAP-Ansible/_git/test_AWXPOC
+    scm_branch: test
+    scm_clean: true
+    scm_update_on_launch: true
+    scm_credential: "AWX_AZDO_PAT"
+    update_project: true
+    wait: true
+
+  - name: ModuleTestPowerJob
+    description: Demo project for AWX CAAC
+    organization: AWXPOC
+    scm_type: git
+    scm_url: https://LDC-Technology-and-Operations@dev.azure.com/LDC-Technology-and-Operations/ATW-AAP-Ansible/_git/LDC_Azure_PowerState
+    scm_branch: main
+    scm_clean: true
+    scm_update_on_launch: true
+    scm_credential: "AWX_AZDO_PAT"
+    update_project: true
+    wait: true

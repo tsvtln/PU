@@ -1,0 +1,308 @@
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "contentVersion": "1.0.0.0",
+        "triggers": {
+            "Trigger_-_Detect_for_action": {
+                "type": "ApiConnectionWebhook",
+                "inputs": {
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['teams']['connectionId']"
+                        }
+                    },
+                    "body": {
+                        "notificationUrl": "@listCallbackUrl()",
+                        "channels": [
+                            "19:e-0w-3Hqf5MQKkaSWQtnH_zEBr7g_3MQV52eShyLOdI1@thread.tacv2"
+                        ],
+                        "groupId": "d65fb04c-cf87-434f-9dfd-4604326a1d6c"
+                    },
+                    "path": "/beta/subscriptions/newmessagetrigger/threadType/@{encodeURIComponent('channel')}"
+                },
+                "conditions": []
+            }
+        },
+        "actions": {
+            "split_message": {
+                "runAfter": {},
+                "type": "Compose",
+                "inputs": "split(triggerOutputs()?['body']['text'], ' ')"
+            },
+            "power_action": {
+                "runAfter": {
+                    "split_message": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "Compose",
+                "inputs": "first(outputs('split_message'))"
+            },
+            "vm_name": {
+                "runAfter": {
+                    "power_action": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "Compose",
+                "inputs": "last(outputs('split_message'))"
+            },
+            "power_on_off_cancel": {
+                "runAfter": {
+                    "vm_name": [
+                        "Succeeded"
+                    ]
+                },
+                "cases": {
+                    "power_on": {
+                        "case": "power_on",
+                        "actions": {
+                            "http_power_on": {
+                                "type": "Http",
+                                "inputs": {
+                                    "uri": "https://atwctl.d1.ad.local/api/v2/job_templates/403/launch/",
+                                    "method": "POST",
+                                    "body": {
+                                        "target_vm": "@{outputs('vm_name')}",
+                                        "action": "start"
+                                    },
+                                    "authentication": {
+                                        "type": "Basic",
+                                        "username": "LDC-P-S-ATW-AUT-001",
+                                        "password": "0ynXZ0HZmpveLYzrCKpZ"
+                                    }
+                                },
+                                "runtimeConfiguration": {
+                                    "contentTransfer": {
+                                        "transferMode": "Chunked"
+                                    }
+                                }
+                            },
+                            "power_on_status": {
+                                "actions": {
+                                    "success_message": {
+                                        "foreach": "@triggerBody()?['value']",
+                                        "actions": {
+                                            "post_success": {
+                                                "type": "ApiConnection",
+                                                "inputs": {
+                                                    "host": {
+                                                        "connection": {
+                                                            "name": "@parameters('$connections')['teams']['connectionId']"
+                                                        }
+                                                    },
+                                                    "method": "post",
+                                                    "body": {
+                                                        "parentMessageId": "@items('success_message')?['messageId']",
+                                                        "recipient": {
+                                                            "groupId": "d65fb04c-cf87-434f-9dfd-4604326a1d6c",
+                                                            "channelId": "19:e-0w-3Hqf5MQKkaSWQtnH_zEBr7g_3MQV52eShyLOdI1@thread.tacv2"
+                                                        },
+                                                        "messageBody": "<p class=\"editor-paragraph\">VM @{outputs('vm_name')} action succeeded: @{outputs('power_action')}</p>"
+                                                    },
+                                                    "path": "/v1.0/teams/conversation/replyWithMessage/poster/Flow bot/location/@{encodeURIComponent('Channel')}"
+                                                }
+                                            }
+                                        },
+                                        "type": "Foreach"
+                                    }
+                                },
+                                "runAfter": {
+                                    "http_power_on": [
+                                        "Succeeded"
+                                    ]
+                                },
+                                "else": {
+                                    "actions": {
+                                        "fail_message": {
+                                            "foreach": "@triggerBody()?['value']",
+                                            "actions": {
+                                                "post_fail": {
+                                                    "type": "ApiConnection",
+                                                    "inputs": {
+                                                        "host": {
+                                                            "connection": {
+                                                                "name": "@parameters('$connections')['teams']['connectionId']"
+                                                            }
+                                                        },
+                                                        "method": "post",
+                                                        "body": {
+                                                            "parentMessageId": "@items('fail_message')?['messageId']",
+                                                            "recipient": {
+                                                                "groupId": "d65fb04c-cf87-434f-9dfd-4604326a1d6c",
+                                                                "channelId": "19:e-0w-3Hqf5MQKkaSWQtnH_zEBr7g_3MQV52eShyLOdI1@thread.tacv2"
+                                                            },
+                                                            "messageBody": "<p class=\"editor-paragraph\">VM @{outputs('vm_name')} action failed: @{outputs('power_action')}.  Error: @{body('http_power_on')}</p><br><br>"
+                                                        },
+                                                        "path": "/v1.0/teams/conversation/replyWithMessage/poster/Flow bot/location/@{encodeURIComponent('Channel')}"
+                                                    }
+                                                }
+                                            },
+                                            "type": "Foreach"
+                                        }
+                                    }
+                                },
+                                "expression": {
+                                    "or": [
+                                        {
+                                            "equals": [
+                                                "@outputs('http_power_on')?['statusCode']",
+                                                200
+                                            ]
+                                        },
+                                        {
+                                            "equals": [
+                                                "@outputs('http_power_on')?['statusCode']",
+                                                201
+                                            ]
+                                        }
+                                    ]
+                                },
+                                "type": "If"
+                            }
+                        }
+                    },
+                    "power_off": {
+                        "case": "power_off",
+                        "actions": {
+                            "http_power_off": {
+                                "type": "Http",
+                                "inputs": {
+                                    "uri": "https://atwctl.d1.ad.local/api/v2/job_templates/403/launch/",
+                                    "method": "POST",
+                                    "body": {
+                                        "target_vm": "@{outputs('vm_name')}",
+                                        "action": "deallocate"
+                                    },
+                                    "authentication": {
+                                        "type": "Basic",
+                                        "username": "LDC-P-S-ATW-AUT-001",
+                                        "password": "0ynXZ0HZmpveLYzrCKpZ"
+                                    }
+                                },
+                                "runtimeConfiguration": {
+                                    "contentTransfer": {
+                                        "transferMode": "Chunked"
+                                    }
+                                }
+                            },
+                            "power_off_status": {
+                                "actions": {
+                                    "success_message_off": {
+                                        "foreach": "@triggerBody()?['value']",
+                                        "actions": {
+                                            "post_status_of_VM_shutdown_success": {
+                                                "type": "ApiConnection",
+                                                "inputs": {
+                                                    "host": {
+                                                        "connection": {
+                                                            "name": "@parameters('$connections')['teams']['connectionId']"
+                                                        }
+                                                    },
+                                                    "method": "post",
+                                                    "body": {
+                                                        "parentMessageId": "@items('success_message_off')?['messageId']",
+                                                        "recipient": {
+                                                            "groupId": "d65fb04c-cf87-434f-9dfd-4604326a1d6c",
+                                                            "channelId": "19:e-0w-3Hqf5MQKkaSWQtnH_zEBr7g_3MQV52eShyLOdI1@thread.tacv2"
+                                                        },
+                                                        "messageBody": "<p class=\"editor-paragraph\">VM @{outputs('vm_name')} action succeeded: @{outputs('power_action')}</p>"
+                                                    },
+                                                    "path": "/v1.0/teams/conversation/replyWithMessage/poster/Flow bot/location/@{encodeURIComponent('Channel')}"
+                                                }
+                                            }
+                                        },
+                                        "type": "Foreach"
+                                    }
+                                },
+                                "runAfter": {
+                                    "http_power_off": [
+                                        "Succeeded"
+                                    ]
+                                },
+                                "else": {
+                                    "actions": {
+                                        "fail_message_off": {
+                                            "foreach": "@triggerBody()?['value']",
+                                            "actions": {
+                                                "post_status_of_VM_shutdown_fail": {
+                                                    "type": "ApiConnection",
+                                                    "inputs": {
+                                                        "host": {
+                                                            "connection": {
+                                                                "name": "@parameters('$connections')['teams']['connectionId']"
+                                                            }
+                                                        },
+                                                        "method": "post",
+                                                        "body": {
+                                                            "parentMessageId": "@items('fail_message_off')?['messageId']",
+                                                            "recipient": {
+                                                                "groupId": "d65fb04c-cf87-434f-9dfd-4604326a1d6c",
+                                                                "channelId": "19:e-0w-3Hqf5MQKkaSWQtnH_zEBr7g_3MQV52eShyLOdI1@thread.tacv2"
+                                                            },
+                                                            "messageBody": "<p class=\"editor-paragraph\">VM @{outputs('vm_name')} action failed: @{outputs('power_action')}. Error:  @{body('http_power_off')}</p>"
+                                                        },
+                                                        "path": "/v1.0/teams/conversation/replyWithMessage/poster/Flow bot/location/@{encodeURIComponent('Channel')}"
+                                                    }
+                                                }
+                                            },
+                                            "type": "Foreach"
+                                        }
+                                    }
+                                },
+                                "expression": {
+                                    "or": [
+                                        {
+                                            "equals": [
+                                                "@outputs('http_power_off')?['statusCode']",
+                                                200
+                                            ]
+                                        },
+                                        {
+                                            "equals": [
+                                                "@outputs('http_power_off')?['statusCode']",
+                                                201
+                                            ]
+                                        }
+                                    ]
+                                },
+                                "type": "If"
+                            }
+                        }
+                    }
+                },
+                "default": {
+                    "actions": {
+                        "Do_nothing": {
+                            "type": "Terminate",
+                            "inputs": {
+                                "runStatus": "Cancelled"
+                            }
+                        }
+                    }
+                },
+                "expression": "@outputs('power_action')",
+                "type": "Switch"
+            }
+        },
+        "outputs": {},
+        "parameters": {
+            "$connections": {
+                "type": "Object",
+                "defaultValue": {}
+            }
+        }
+    },
+    "parameters": {
+        "$connections": {
+            "type": "Object",
+            "value": {
+                "teams": {
+                    "id": "/subscriptions/2e78744c-ede2-4e8d-b4ec-f4c63fff5eb5/providers/Microsoft.Web/locations/westeurope/managedApis/teams",
+                    "connectionId": "/subscriptions/2e78744c-ede2-4e8d-b4ec-f4c63fff5eb5/resourceGroups/CSM1KAPPRSGI01/providers/Microsoft.Web/connections/teams",
+                    "connectionName": "teams"
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,9 @@
+ansible-core==2.15.11
+azure-identity==1.19.0
+azure-mgmt-compute==33.0.0
+azure-mgmt-resource==23.2.0
+azure-core==1.31.0
+azure-common==1.1.28
+msrestazure==0.6.4
+msrest==0.7.1
+

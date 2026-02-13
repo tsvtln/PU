@@ -1,0 +1,10 @@
+---
+collections:
+  - name: infra.controller_configuration
+    version: ">=2.0.0"
+  - name: azure.azcollection
+    version: ">=1.19.0"
+  - name: community.azure
+    version: ">=2.0.0"
+  - name: collections/ldc_custom-azure_manager-1.2.2.tar.gz
+    type: file
