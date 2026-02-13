@@ -142,3 +142,16 @@ cython_debug/
 /org
 .note
 *.env
+cython_debug/
+test.py
+*.idea
+*test_all_listed.py
+*encoded.txt
+*to_encode.txt
+trash/stps.out
+mail
+kk.py
+kk.json
+SW/pkg_updater/bin/global_vars.py
+uipathremote/bin/global_vars.py
+trash/
